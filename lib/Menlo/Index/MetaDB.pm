@@ -9,7 +9,9 @@ our $VERSION = '0.007';
 
 use parent 'CPAN::Common::Index';
 
-use Class::Tiny qw/uri/;
+use Class::Tiny qw/uri/, {
+    http => sub { HTTP::Tiny->new(keep_alive => 1) },
+};
 
 use Carp;
 use CPAN::Meta::YAML;
@@ -45,7 +47,7 @@ sub search_packages {
     my $mod = $args->{package};
 
     if ($args->{version} || $args->{version_range}) {
-        my $res = HTTP::Tiny->new->get( $self->uri . "history/$mod" );
+        my $res = $self->http->get( $self->uri . "history/$mod" );
         return unless $res->{success};
 
         my $range = defined $args->{version} ? "== $args->{version}" : $args->{version_range};
@@ -84,7 +86,7 @@ sub search_packages {
             };
         }
     } else {
-        my $res = HTTP::Tiny->new->get( $self->uri . "package/$mod" );
+        my $res = $self->http->get( $self->uri . "package/$mod" );
         return unless $res->{success};
 
         if ( my $yaml = CPAN::Meta::YAML->read_string( $res->{content} ) ) {

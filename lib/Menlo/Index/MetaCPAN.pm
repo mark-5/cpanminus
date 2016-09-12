@@ -8,7 +8,9 @@ package Menlo::Index::MetaCPAN;
 
 use parent 'CPAN::Common::Index';
 
-use Class::Tiny qw/uri include_dev/;
+use Class::Tiny qw/uri include_dev/, {
+    http => sub { HTTP::Tiny->new(keep_alive => 1) },
+};
 
 use Carp;
 use CPAN::Meta::Requirements;
@@ -81,7 +83,7 @@ sub search_packages {
 
     my($release, $author, $module_version);
 
-    my $res = HTTP::Tiny->new->get($module_uri);
+    my $res = $self->http->get($module_uri);
     return unless $res->{success};
 
     my $module_meta = eval { JSON::PP::decode_json($res->{content}) };
@@ -105,7 +107,7 @@ sub search_packages {
         fields => [ 'download_url' ],
     });
 
-    $res = HTTP::Tiny->new->get($dist_uri);
+    $res = $self->http->get($dist_uri);
     return unless $res->{success};
 
     my $dist_meta = eval { JSON::PP::decode_json($res->{content}) };
