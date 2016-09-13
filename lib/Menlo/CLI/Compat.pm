@@ -469,10 +469,9 @@ sub numify_ver {
 sub search_metacpan {
     my($self, $module, $version) = @_;
 
-    require Menlo::Index::MetaCPAN;
     $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    my $index = Menlo::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
+    my $index = $self->metacpan;
     my $pkg = $self->search_common($index, { package => $module, version_range => $version }, $version);
     return $pkg if $pkg;
 
@@ -497,7 +496,6 @@ sub search_database {
 sub search_cpanmetadb {
     my($self, $module, $version) = @_;
 
-    require Menlo::Index::MetaDB;
     $self->chat("Searching $module ($version) on cpanmetadb ...\n");
 
     my $args = { package => $module };
@@ -505,7 +503,7 @@ sub search_cpanmetadb {
         $args->{version_range} = $version;
     }
 
-    my $index = Menlo::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
+    my $index = $self->metadb;
     my $pkg = $self->search_common($index, $args, $version);
     return $pkg if $pkg;
 
@@ -2792,6 +2790,22 @@ sub mask_uri_passwords {
     my($self, @strings) = @_;
     s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:********@}gx for @strings;
     return @strings;
+}
+
+sub metacpan {
+    my ($self) = @_;
+    return $self->{_indexes}{metacpan} ||= do {
+        require Menlo::Index::MetaCPAN;
+        Menlo::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
+    };
+}
+
+sub metadb {
+    my ($self) = @_;
+    return $self->{_indexes}{metadb} ||= do {
+        require Menlo::Index::MetaDB;
+        Menlo::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
+    };
 }
 
 1;
